@@ -12,6 +12,7 @@ import re
 from collections import namedtuple
 
 from boto.s3.connection import S3Connection
+from boto.exception import S3ResponseError
 # from boto.s3.key import Key
 
 
@@ -33,7 +34,7 @@ def main():
         download_logs(opts.bucket_name, opts.prefix, opts.cache_dir)
 
 
-def download_logs(bucketName, prefix, cacheDir):
+def download_logs(bucketName, prefix, cacheDir, delete=True):
     """docstring for download_logs"""
     cacheDir = os.path.expandvars(cacheDir)
     if not os.path.exists(cacheDir): os.makedirs(cacheDir)
@@ -46,8 +47,13 @@ def download_logs(bucketName, prefix, cacheDir):
         if os.path.exists(cachedPath): os.remove(cachedPath)
         try:
             key.get_contents_to_filename(cachedPath)
-        except:
+            if os.path.exists(cachedPath) and delete:
+                key.delete()
+        except S3ResponseError, err:
             print "Error downloading", key.name
+            if err.status in [403, 404]:
+                key.delete()
+            raise
 
 
 class LogParser(object):
