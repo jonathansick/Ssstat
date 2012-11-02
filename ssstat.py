@@ -7,13 +7,17 @@ Ssstat: S3 Log Analytics with MongoDB.
 """
 
 import os
+import shutil
 import optparse
 import re
 from collections import namedtuple
+import glob
+from datetime import datetime
 
 from boto.s3.connection import S3Connection
 from boto.exception import S3ResponseError
 # from boto.s3.key import Key
+import pymongo
 
 
 def main():
@@ -33,9 +37,12 @@ def main():
             and (opts.prefix is not None):
         download_logs(opts.bucket_name, opts.prefix, opts.cache_dir)
 
+    if (opts.cache_dir is not None) and (opts.prefix is not None):
+        ingest_logs(opts.prefix, opts.cache_dir)
+
 
 def download_logs(bucketName, prefix, cacheDir, delete=True):
-    """docstring for download_logs"""
+    """Download log files for this prefix to the cacheDir."""
     cacheDir = os.path.expandvars(cacheDir)
     if not os.path.exists(cacheDir): os.makedirs(cacheDir)
 
@@ -54,6 +61,45 @@ def download_logs(bucketName, prefix, cacheDir, delete=True):
             if err.status in [403, 404]:
                 key.delete()
             raise
+
+
+def ingest_logs(prefix, cacheDir):
+    """Process log files, adding them to MongoDB."""
+    # Setup directory for archiving ingested log files
+    archiveDir = os.path.join(cacheDir, "_archive_%s" % prefix)
+    if not os.path.exists(archiveDir): os.makedirs(archiveDir)
+
+    conn = pymongo.Connection()
+    db = conn.ssstat
+    collection = db[prefix]
+    collection.ensure_index([('path', 1), ('time', 1)])
+    
+    # Iterate through files and parse
+    pattern = os.path.join(cacheDir, prefix + "*")
+    paths = glob.glob(pattern)
+    parser = LogParser()
+    for path in paths:
+        events = parser.parse_file(path)
+        for event in events:
+            if event is not None:
+                insert_event(event, collection)
+        pathName = os.path.basename(path)
+        archivePath = os.path.join(archiveDir, pathName)
+        shutil.move(path, archivePath)
+
+
+def insert_event(event, collection):
+    """docstring for insert_even"""
+    # print event.key, dt
+    doc = {"time": event.datetime, "ip": event.ip, "path": event.key,
+            "user_agent": event.user_agent, "referer": event.referer,
+            "http_status": event.http_status, "s3_error": event.s3_error}
+    collection.insert(doc, safe=True)
+
+
+MONTH = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5,
+        "Jun": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11,
+        "Dec": 12}
 
 
 class LogParser(object):
@@ -88,8 +134,22 @@ class LogParser(object):
     def _parse_line(self, line):
         """Parse a single line from a log file, producing an Event object."""
         match = self.parser.match(line)
-        results = [match.group(1 + n) for n in xrange(17)]
+        try:
+            results = [match.group(1 + n) for n in xrange(17)]
+        except:
+            print line
+            print "Parsing failure"  # FIXME need to understand this
+            return None
         event = self.Event._make(results)
+        # Replace timestamp with datetime object
+        # e.g. 02/Nov/2012:14:11:14 +0000
+        dateStr = event.datetime[:11]
+        day, monthStr, year = dateStr.split("/")
+        timeStr = event.datetime[12:20]
+        hour, minute, sec = timeStr.split(":")
+        dt = datetime(int(year), MONTH[monthStr], int(day),
+                int(hour), int(minute), int(sec))
+        event = event._replace(datetime=dt)
         return event
 
 
