@@ -40,7 +40,12 @@ def download_logs(bucketName, prefix, cacheDir):
     bucket = conn.create_bucket(bucketName)
     results = bucket.list(prefix=prefix)
     for key in results:
-        print key.name
+        cachedPath = os.path.join(cacheDir, key.name)
+        if os.path.exists(cachedPath): os.remove(cachedPath)
+        try:
+            key.get_contents_to_filename(cachedPath)
+        except:
+            print "Error downloading", key.name
 
 
 if __name__ == '__main__':
