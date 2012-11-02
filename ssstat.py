@@ -8,6 +8,8 @@ Ssstat: S3 Log Analytics with MongoDB.
 
 import os
 import optparse
+import re
+from collections import namedtuple
 
 from boto.s3.connection import S3Connection
 # from boto.s3.key import Key
@@ -48,5 +50,49 @@ def download_logs(bucketName, prefix, cacheDir):
             print "Error downloading", key.name
 
 
+class LogParser(object):
+    """Parser for S3 Log files.
+    
+    Borrows snippets from:
+        http://blog.kowalczyk.info/article/Parsing-s3-log-files-in-python.html
+    """
+    def __init__(self):
+        super(LogParser, self).__init__()
+        _pattern = r'(\S+) (\S+) \[(.*?)\] (\S+) (\S+) ' \
+                        r'(\S+) (\S+) (\S+) "([^"]+)" ' \
+                        r'(\S+) (\S+) (\S+) (\S+) (\S+) (\S+) ' \
+                        r'"([^"]+)" "([^"]+)"'
+        self.parser = re.compile(_pattern)
+
+        # Use a namedtuple to store fields from the log line
+        fieldNames = ("bucket_owner", "bucket", "datetime", "ip",
+                "requestor_id", "request_id", "operation", "key",
+                "http_method_uri_proto", "http_status", "s3_error",
+                "bytes_sent", "object_size", "total_time", "turn_around_time",
+                "referer", "user_agent")
+        self.Event = namedtuple('Event', fieldNames)
+
+    def parse_file(self, path):
+        """Produce event objects from the log file `path`."""
+        f = open(path, 'r')
+        events = [self._parse_line(line) for line in f.readlines()]
+        f.close()
+        return events
+
+    def _parse_line(self, line):
+        """Parse a single line from a log file, producing an Event object."""
+        match = self.parser.match(line)
+        results = [match.group(1 + n) for n in xrange(17)]
+        event = self.Event._make(results)
+        return event
+
+
+def test_parser():
+    data = r'e9b5297650a03c924eb3295e70871b615f958c399c9690c30f344ab2e9bbf815 files.jonathansick.ca [02/Nov/2012:14:11:14 +0000] 128.0.0.1 - 3FF4D293FACEC593 WEBSITE.HEAD.OBJECT adsbibdesk/adsbibdesk_3.0.6.zip "HEAD /adsbibdesk/adsbibdesk_3.0.6.zip HTTP/1.1" 200 - - 56730 19 - "-" "-" -'
+    p = LogParser()
+    print p._parse_line(data)
+
+
 if __name__ == '__main__':
     main()
+    # test_parser()
