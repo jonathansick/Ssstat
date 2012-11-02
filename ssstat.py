@@ -90,10 +90,10 @@ def ingest_logs(prefix, cacheDir):
 
 def insert_event(event, collection):
     """docstring for insert_even"""
-    # print event.key, dt
     doc = {"time": event.datetime, "ip": event.ip, "path": event.key,
             "user_agent": event.user_agent, "referer": event.referer,
-            "http_status": event.http_status, "s3_error": event.s3_error}
+            "http_status": event.http_status, "s3_error": event.s3_error,
+            "operation": event.operation, "bytes_sent": event.bytes_sent}
     collection.insert(doc, safe=True)
 
 
@@ -149,7 +149,13 @@ class LogParser(object):
         hour, minute, sec = timeStr.split(":")
         dt = datetime(int(year), MONTH[monthStr], int(day),
                 int(hour), int(minute), int(sec))
-        event = event._replace(datetime=dt)
+        # Replace bytes sent with integer
+        bytesSent = event.bytes_sent
+        if bytesSent != "-":
+            bytesSent = int(bytesSent)
+        else:
+            bytesSent = 0
+        event = event._replace(datetime=dt, bytes_sent=bytesSent)
         return event
 
 
