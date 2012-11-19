@@ -38,6 +38,10 @@ setup(
                  'Programming Language :: Python',
                  'Programming Language :: Python :: 2.7',
                  'Environment :: Console',
+                 'Intended Audience :: System Administrators',
+                 'Intended Audience :: Information Technology',
+                 'Topic :: Internet :: Log Analysis',
+                 'License :: OSI Approved :: BSD License',
                  ],
 
     platforms=['Any'],
