@@ -1,6 +1,8 @@
 # Ssstat
 
-Amazon S3 Log Processing with MongoDB. **Note that this is entirely experimental. It is not tested for scale, nor does it have a great interface (yet).**
+Amazon S3 Log Processing with MongoDB.
+**Note that this is entirely experimental.
+It is not tested for scale.**
 
 *Ssstat* helps you:
 
@@ -11,23 +13,33 @@ Once your log data is in MongoDB it becomes much easier to understand who is acc
 
 For a primer on how to get started with S3 logging, refer to the [Setting up Logging](https://github.com/jonathansick/Ssstat/wiki/Setting-up-Logging) page on the project wiki.
 
-## Usage
+## Basic Usage
 
-The UI is terrible.
-Using *Cliff* may make the interface more flexible in the future.
-Meanwhile, the basic command patterns are:
+*Ssstat* uses the [Cliff][] framework to provide a nice command syntax--
+and an interactive mode for free! Run `ssstat --help` for details.
 
 ### To download and ingest event data
 
-  python ssstat.py -b log_bucket_name -p prefix -d cache_dir
+    ssstat ingest log_bucket_name prefix 
 
-This will access your S3 log bucket (`bucket_name`), and download all files with prefix (`prefix`) onto your local HD into the `cache_dir`. After the download is complete, the log files are parsed and ingested into the MongoDB collection for that prefix. Processed log files are deleted from the S3 logging bucket, and moved to the `cache_dir/_prefix_archive` directory. Your log data is never deleted.
+This will access your S3 log bucket (`log_bucket_name`), and download all files with prefix (`prefix`) onto your local HD into the `cache_dir` (which can be explicity set with the `--cache-dir` switch).
+After the download is complete, the log files are parsed and ingested into the MongoDB collection for that prefix.
+Processed log files are deleted from the S3 logging bucket, and moved to the `cache_dir/_prefix_archive` directory.
+Your log files are never deleted.
 
-### To only ingest log data that has already been downloaded
+You can also download the log files and ingest them into MongoDB in two separate steps (for whatever reason). To *just* download log files into your local cache, run
 
-Suppose you trash the event collection in MongoDB and want to load data back into it. You can re-ingest data from the archive. Simply omit the `-b` argument and *Ssstat* will ingest files already downloaded for that prefix.
+    ssstat download log_bucket_name prefix
 
-  python ssstat.py -p prefix -d cache_dir
+And to ingest whatever log files have been downloaded, but not processed, run
+
+    ssstat ingest prefix
+
+See `ssstat --help` for a complete summary of options.
+
+### Analytics in MongoDB
+
+**Coming soon**. Until then, you can run custom commands on the `prefix` collection in the `ssstat` DB on the MongoDB instance listening to `localhost` and port 27017.
 
 ## MongoDB Schema
 
@@ -58,11 +70,13 @@ Aggregation statistics are not yet built into *Ssstat*, but see the [Storing Log
 ## Credits
 
 This project relies in [boto][] and [pymongo][] to access AWS S3 and MongoDB, respectively.
+[Cliff][] made the command line interface easy to implement.
 
 Code for S3 log file parsing is based on blog posts by Krzysztof Kowalczyk: [Parsing S3 log files in python](http://blog.kowalczyk.info/article/Parsing-s3-log-files-in-python.html) and [Compacting S3 AWS logs](http://blog.kowalczyk.info/article/Compacting-s3-aws-logs.html).
 
 [boto]: http://docs.pythonboto.org/
 [pymongo]: http://api.mongodb.org/python/current/
+[Cliff]: http://cliff.readthedocs.org/en/latest/index.html
 
 ## Contact info
 
