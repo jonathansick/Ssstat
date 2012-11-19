@@ -9,6 +9,8 @@ Amazon S3 Log Processing with MongoDB. **Note that this is entirely experimental
 
 Once your log data is in MongoDB it becomes much easier to understand who is accessing your data, and how often.
 
+For a primer on how to get started with S3 logging, refer to the [Setting up Logging](https://github.com/jonathansick/Ssstat/wiki/Setting-up-Logging) page on the project wiki.
+
 ## Usage
 
 The UI is terrible.
