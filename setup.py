@@ -58,6 +58,7 @@ setup(
         'ssstat.app': [
             'ingest = ssstat.ingest:IngestCommand',
             'download = ssstat.download:DownloadCommand',
+            'insert = ssstat.insert:InsertCommand'
         ],
     },
 
