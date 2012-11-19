@@ -57,7 +57,7 @@ setup(
         ],
         'ssstat.app': [
             'ingest = ssstat.ingest:IngestCommand',
-            # 'recover = ssstat.recover:RecoverCommand',
+            'download = ssstat.download:DownloadCommand',
         ],
     },
 
