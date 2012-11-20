@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Ssstat: S3 Log Analytics with MongoDB.
+Functions and tools for downloading and reading S3 Logs, and ultimately
+adding them into MongoDB.
 
 2012-11-02 - Created by Jonathan Sick
 """
@@ -21,24 +22,7 @@ import pymongo
 
 
 def main():
-    parser = optparse.OptionParser(version="0.0.1",
-            usage="Usage: $prog [options]")
-    parser.add_option('-b', '--bucket', help="S3 Log Bucket",
-            dest="bucket_name", default=None)
-    parser.add_option('-d', '--cache-dir', help="Log file cache directory",
-            dest="cache_dir", default=None)
-    parser.add_option('-p', '--prefix',
-            help="Prefix for the desired log files",
-            dest="prefix", default=None)
-    opts, args = parser.parse_args()
-
-    if (opts.bucket_name is not None) \
-            and (opts.cache_dir is not None) \
-            and (opts.prefix is not None):
-        download_logs(opts.bucket_name, opts.prefix, opts.cache_dir)
-
-    if (opts.cache_dir is not None) and (opts.prefix is not None):
-        ingest_logs(opts.prefix, opts.cache_dir)
+    pass
 
 
 def download_logs(bucketName, prefix, cacheDir, delete=True):
@@ -54,6 +38,7 @@ def download_logs(bucketName, prefix, cacheDir, delete=True):
         if os.path.exists(cachedPath): os.remove(cachedPath)
         try:
             key.get_contents_to_filename(cachedPath)
+            print "Downloading", key.name
             if os.path.exists(cachedPath) and delete:
                 print "Deleted downloaded %s" % key.name
                 key.delete()
@@ -92,9 +77,9 @@ def ingest_logs(prefix, cacheDir):
 def insert_event(event, collection):
     """docstring for insert_even"""
     doc = {"time": event.datetime, "ip": event.ip, "path": event.key,
-            "user_agent": event.user_agent, "referer": event.referer,
-            "http_status": event.http_status, "s3_error": event.s3_error,
-            "operation": event.operation, "bytes_sent": event.bytes_sent}
+        "user_agent": event.user_agent, "referer": event.referer,
+        "http_status": event.http_status, "s3_error": event.s3_error,
+        "operation": event.operation, "bytes_sent": event.bytes_sent}
     collection.insert(doc, safe=True)
 
 
@@ -112,9 +97,9 @@ class LogParser(object):
     def __init__(self):
         super(LogParser, self).__init__()
         _pattern = r'(\S+) (\S+) \[(.*?)\] (\S+) (\S+) ' \
-                        r'(\S+) (\S+) (\S+) "([^"]+)" ' \
-                        r'(\S+) (\S+) (\S+) (\S+) (\S+) (\S+) ' \
-                        r'"([^"]+)" "([^"]+)"'
+            r'(\S+) (\S+) (\S+) "([^"]+)" ' \
+            r'(\S+) (\S+) (\S+) (\S+) (\S+) (\S+) ' \
+            r'"([^"]+)" "([^"]+)"'
         self.parser = re.compile(_pattern)
 
         # Use a namedtuple to store fields from the log line
