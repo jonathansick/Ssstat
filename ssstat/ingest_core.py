@@ -38,6 +38,7 @@ def download_logs(bucketName, prefix, cacheDir, delete=True):
         if os.path.exists(cachedPath): os.remove(cachedPath)
         try:
             key.get_contents_to_filename(cachedPath)
+            print "Downloading", key.name
             if os.path.exists(cachedPath) and delete:
                 key.delete()
         except S3ResponseError, err:
