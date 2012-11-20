@@ -22,7 +22,7 @@ class IngestCommand(Command):
     def get_parser(self, progName):
         """Adds command line options."""
         parser = super(IngestCommand, self).get_parser(progName)
-        parser.add_argument('bucket',
+        parser.add_argument('log_bucket',
             help='Name of S3 Logging Bucket')
         parser.add_argument('prefix',
             help='Prefix for the desired log files')

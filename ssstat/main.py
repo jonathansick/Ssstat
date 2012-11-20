@@ -11,7 +11,7 @@ import logging
 import sys
 
 from cliff.app import App
-from cliff.commandmangager import CommandManager
+from cliff.commandmanager import CommandManager
 
 
 class SsstatApp(App):
