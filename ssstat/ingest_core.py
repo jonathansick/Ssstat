@@ -9,7 +9,6 @@ adding them into MongoDB.
 
 import os
 import shutil
-import optparse
 import re
 from collections import namedtuple
 import glob
@@ -31,7 +30,7 @@ def download_logs(bucketName, prefix, cacheDir, delete=True):
     if not os.path.exists(cacheDir): os.makedirs(cacheDir)
 
     conn = S3Connection()
-    bucket = conn.create_bucket(bucketName)
+    bucket = conn.get_bucket(bucketName)
     results = bucket.list(prefix=prefix)
     for key in results:
         cachedPath = os.path.join(cacheDir, key.name)
